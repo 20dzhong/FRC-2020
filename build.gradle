@@ -1,0 +1,56 @@
+plugins {
+    id 'java'
+    id 'idea'
+    id "edu.wpi.first.GradleRIO" version "2019.4.1"
+    id 'application'
+}
+
+repositories {
+    // mavenCentral()
+    mavenLocal()
+    jcenter()
+}
+
+def ROBOT_MAIN_CLASS = "FRC.team852.skeleton.Main"
+
+deploy {
+    targets {
+        roboRIO("roborio") {
+            // Team number is loaded from .wpilib/wpilib_preferences.json
+            team = frc.getTeamNumber()
+        }
+    }
+    artifacts {
+        frcJavaArtifact('frcJava') {
+            targets << "roborio"
+            debug = frc.getDebugOrDefault(false)
+        }
+        // Built in artifact to deploy arbitrary files to the roboRIO.
+        fileTreeArtifact('frcStaticFileDeploy') {
+            // The directory below is the local directory to deploy
+            files = fileTree(dir: 'src/main/deploy')
+            // Deploy to RoboRIO target, into /home/lvuser/deploy
+            targets << "roborio"
+            directory = '/home/lvuser/deploy'
+        }
+    }
+}
+
+dependencies {
+    compile wpi.deps.wpilib()
+    compile wpi.deps.vendor.java()
+    nativeZip wpi.deps.vendor.jni(wpi.platforms.roborio)
+    nativeDesktopZip wpi.deps.vendor.jni(wpi.platforms.desktop)
+    testCompile 'junit:junit:4.12'
+}
+
+jar {
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    manifest edu.wpi.first.gradlerio.GradleRIOPlugin.javaManifest(ROBOT_MAIN_CLASS)
+}
+
+wrapper {
+    gradleVersion = '5.0'
+}
+// Define the main class for the application
+mainClassName = 'FRC.Skeleton.App'
